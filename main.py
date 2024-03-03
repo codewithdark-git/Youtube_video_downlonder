@@ -1,10 +1,9 @@
 import yt_dlp
 import streamlit as st
-
+import os
+from urllib3.exceptions import ReadTimeoutError
 
 def main():
-    st.title("Video Downloader")
-
     # Header
     st.header("Welcome to Video Downloader App")
     st.subheader("Download your favorite YouTube videos!")
@@ -17,17 +16,25 @@ def main():
         # Set options for yt_dlp
         ydl_opts = {}
 
-        # Download the video
+        try:
+            # Get the default downloads directory
+            default_download_path = os.path.expanduser("~/Downloads")
 
-        progress_bar = st.progress(0)
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info_dict = ydl.extract_info(url_to_download, download=False)
-                video_title = info_dict.get('title', 'Video')
-                st.write(f"Downloading: {video_title}")
-                ydl.add_progress_hook(lambda d: progress_bar.progress(d['downloaded_bytes'] / d['total_bytes']) if d['status'] == 'downloading' else None)
-                ydl.download([url_to_download])
-                progress_bar.empty()
-                st.success("Your Video Successfully Downloaded")
+            # Set the output path for downloaded video
+            ydl_opts['outtmpl'] = os.path.join(default_download_path, '%(title)s.%(ext)s')
+
+
+            # Start the download spinner
+            with st.spinner("Downloading..."):
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info_dict = ydl.extract_info(url_to_download, download=True)
+
+            st.success("Your Video Successfully Downloaded")
+
+        except ReadTimeoutError:
+            st.error("Please Check Your Connection. Please try again.")
+        except Exception as e:
+            st.error("Please Check Your Connection. Please try again.")
 
     # Footer
     st.markdown("<hr>", unsafe_allow_html=True)
